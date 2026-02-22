@@ -1,0 +1,7 @@
+#Examples, remove these and configure your hosts.
+somehostnodns ansible_host=192.168.x.x
+wordpress.yourdomain.net
+
+#Not needed for these roles, but an example with grouping and host-specific variables.
+[test_group]
+wordpress.yourdomain.net var=[some,list] var2=something

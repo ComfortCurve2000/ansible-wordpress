@@ -1,0 +1,21 @@
+---
+- name: Add User
+  user:
+    name: "{{ item['key'] }}"
+    state: present
+    groups: sudo,cdrom,floppy,audio,dip,video,plugdev,users,netdev
+    shell: /bin/bash
+  loop: "{{ users|dict2items }}"
+
+- name: Add SSH Key
+  authorized_key:
+    user: "{{ item['key'] }}"
+    state: present
+    key: "{{ item['value'] }}"
+  loop: "{{ users|dict2items }}"
+
+- name: Remove User
+  user:
+    name: "{{ item }}"
+    state: absent
+  loop: "{{ remove_users }}"

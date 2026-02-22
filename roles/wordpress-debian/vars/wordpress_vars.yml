@@ -1,0 +1,11 @@
+wordpress_vars_exist: Defined
+wordpress_hosts: {{host}}
+wordpress_fqdn: {{wordpress_hostname}} #eg wordpress.yourdomain.net
+custom_certificate: False
+
+#Developed for 6.9.1 on Debian 13
+wordpress_version: 6.9.1
+php_version: 8.4 # Match this to the version installed by default on debian
+wordpress_database_name: {{wordpress_database_name}} #eg wordpress
+wordpress_database_password: {{wp_password}} #eg `openssl rand -base64 32`
+wordpress_database_user: {{wp_user}} #eg wordpress

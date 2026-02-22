@@ -1,0 +1,52 @@
+- name: Cleanup # noqa 301
+  shell: "{{ item }}" # noqa 305
+  with_items:
+    # Set to UTC
+    #- timedatectl set-timezone UTC
+    # Machine ID, system will automatically regenerate
+    - truncate -s 0 /etc/machine-id
+    - rm -f /var/lib/dbus/machine-id
+    # Entropy File and coredump
+    - rm -f /var/lib/systemd/random-seed
+    - rm -rf /var/lib/systemd/coredump/*
+    # SSH Host Keys
+    - rm -f /etc/ssh/ssh_host_*
+    # NetworkManager state
+    - rm -rf /var/lib/NetworkManager/*
+    #- rm -f /etc/resolv.conf Using a symlink for resolvconf
+    # If not using NetworkManager
+    - rm -rf /var/lib/systemd/network/*
+    # APT
+    - apt -y autoremove
+    - apt clean
+    - rm -rf /var/lib/apt/lists/*
+    # Remove root's and users' sensitive files
+    - unset HISTFILE
+    - rm -f ~root/.bash_history
+    - rm -f ~root/.lesshst
+    - rm -f ~root/.viminfo
+    - find /home -type f -name .bash_history -exec rm -f {} +
+    - find /home -type f -name .lesshst -exec rm -f {} +
+    - find /home -type f -name .viminfo -exec rm -f {} + 
+    - find /root/.cache -type f -delete
+    - find /home -type d -name .cache -exec find {} -type f -delete \;
+    # Clean /tmp 
+    - rm -rf /tmp/*
+    - rm -rf /var/tmp/*
+    # Stop Logging
+    - systemctl stop systemd-journald
+    # Clear logs managed by systemd journal
+    - journalctl --rotate
+    - journalctl --vacuum-time=1s
+    # Remove all /var/log/ files
+    - find /var/log -type f -delete
+    - find /var/log -type l -delete
+    - find /var/log -type p -delete
+    - find /var/log -type s -delete
+    # Trim
+    - sync
+    - fstrim -av
+    - sync
+    # SSH
+    #- rm -rf /root/.ssh
+    #- find /home -name .ssh -type d -exec rm -rf {} +

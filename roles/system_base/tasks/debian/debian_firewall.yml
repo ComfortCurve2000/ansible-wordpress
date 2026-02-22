@@ -1,0 +1,26 @@
+---
+# Eventually iptables will be replaced by nftables
+- name: Install iptables
+  apt:
+    name: iptables
+    state: present
+  register: iptables_install
+
+- name: Install iptables-persistent
+  apt:
+    name: iptables-persistent
+    state: present
+  register: iptables_install
+
+- name: Initial iptables Configuration # noqa 503
+  template:
+    src: iptables.j2
+    dest: "/etc/iptables/rules.v4"
+    owner: root
+    group: root
+    mode: '644'
+  when: iptables_install.changed
+
+- name: Load iptables # noqa 503
+  command: iptables-restore /etc/iptables/rules.v4
+  when: iptables_install.changed

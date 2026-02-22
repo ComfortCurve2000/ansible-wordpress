@@ -1,0 +1,5 @@
+#users:
+#  usertoadd: "ssh-ed25519 somekey"
+
+#remove_users:
+#  - someuser

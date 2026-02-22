@@ -1,0 +1,21 @@
+---
+# ansible-playbook roles/wordpress-debian/build-wordpress.yml -e @secure/variables/wordpress_vars.yml
+- name: WordPress
+  hosts: "{{ wordpress_hosts }}"
+  become: yes
+
+  pre_tasks:
+    - fail:
+        msg: "Please pass the appropriate vars files with -e @/path/to/file.yml"
+      when: wordpress_vars_exist is undefined
+
+  tasks:
+    - name: Install system_base
+      include_role:
+        name: system_base
+      tags: [system_base]
+
+    - name: Install WordPress
+      include_role:
+        name: wordpress-debian
+      tags: [wordpress]

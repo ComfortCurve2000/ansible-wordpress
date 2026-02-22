@@ -1,0 +1,6 @@
+---
+- name: Debian
+  include_tasks:
+    file: debian/debian_main.yml
+  tags: [system_base]
+  when: ansible_facts.distribution == 'Debian'

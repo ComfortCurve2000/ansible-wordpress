@@ -1,0 +1,90 @@
+---
+- name: Create WordPress Database
+  community.mysql.mysql_db:
+    name: "{{ wordpress_database_name }}"
+    state: present
+    login_unix_socket: /run/mysqld/mysqld.sock
+
+- name: Create WordPress Database User
+  community.mysql.mysql_user:
+    name: "{{ wordpress_database_user }}"
+    password: "{{ wordpress_database_password }}"
+    priv: '{{ wordpress_database_name }}.*:ALL,GRANT'
+    state: present
+    login_unix_socket: /run/mysqld/mysqld.sock
+
+- name: Check if wp-config.php has already been created
+  stat:
+    path: /var/www/wordpress/wp-config.php
+  register: wp_config_exists
+
+- name: Generate Authentication Keys
+  uri:
+    url: https://api.wordpress.org/secret-key/1.1/salt/
+    method: GET
+    return_content: yes
+  register: wordpress_api_result
+  when: not wp_config_exists.stat.exists
+
+- name: WordPress Configuration
+  template:
+    src: wp-config.php.j2
+    dest: "/var/www/wordpress/wp-config.php"
+    owner: www-data
+    group: www-data
+    mode: '644'
+  when: not wp_config_exists.stat.exists
+
+- name: Set php post_max_size
+  lineinfile:
+    path: /etc/php/{{ php_version }}/fpm/php.ini
+    regexp: '^post_max_size = .*'
+    line: post_max_size = 64M
+    # Default 8M
+  register: php_result
+
+- name: Set php upload_max_filesize
+  lineinfile:
+    path: /etc/php/{{ php_version }}/fpm/php.ini
+    regexp: '^upload_max_filesize = .*'
+    line: upload_max_filesize = 64M
+    # Default 2M
+
+- name: Set php max_execution_time
+  lineinfile:
+    path: /etc/php/{{ php_version }}/fpm/php.ini
+    regexp: '^max_execution_time = .*'
+    line: max_execution_time = 180
+    # Default 30
+
+- name: Set php memory_limit
+  lineinfile:
+    path: /etc/php/{{ php_version }}/fpm/php.ini
+    regexp: '^memory_limit = .*'
+    line: memory_limit = 512
+    # Default 128
+
+- name: Set php max_input_vars
+  lineinfile:
+    path: /etc/php/{{ php_version }}/fpm/php.ini
+    regexp: ';?max_input_vars = .*'
+    line: 'max_input_vars = 3000'
+    # Default 1000
+
+- name: Set reddis maxmemory
+  lineinfile:
+    path: /etc/redis/redis.conf
+    regexp: '[# ]?maxmemory .*'
+    line: 'maxmemory 512mb'
+    # Default none
+
+- name: Set maxmemory-policy
+  lineinfile:
+    path: /etc/redis/redis.conf
+    regexp: '[# ]?maxmemory-policy .*'
+    line: 'maxmemory-policy allkeys-lru'
+    # Default noeviction
+
+- name: Reboot after PHP changes
+  reboot:
+  when: php_result.changed

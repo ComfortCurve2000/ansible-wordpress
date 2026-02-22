@@ -1,0 +1,101 @@
+---
+# Check https://make.wordpress.org/hosting/handbook/server-environment/
+# Redis needs the WP plugin `Redis Object Cache`, then enable in its settings.
+
+- name: Install Packages
+  apt:
+    name:
+      - python3-pip
+      - python3-pexpect
+      - python3-pymysql
+      - apache2
+      - ghostscript
+      - imagemagick
+      - webp
+      - libavif-bin
+      - libavif-gdk-pixbuf
+      - libavif-dev
+      - php
+      - php-fpm
+      - libapache2-mod-fcgid
+      - php-curl
+      - php-json 
+      - php-mysql
+      - php-common
+      - php-xml
+      - php-mbstring
+      - php-zip
+      - php-gd
+      - php-intl
+      - php-igbinary
+      - php-imagick
+      - php-ssh2
+      - redis-server
+      - php-redis
+    state: present
+    update_cache: true
+
+- name: Enable Modules
+  command: a2enmod rewrite ssl headers proxy proxy_fcgi setenvif http2 expires deflate
+
+- name: Enable PHP-FPM Apache Configuration
+  command: "a2enconf php{{ php_version }}-fpm"
+
+- name: Install Database
+  apt:
+    name:
+      - mariadb-server
+    state: present
+  register: install_database_register
+
+- name: Start MariaDB 
+  service:
+    name: "mariadb"
+    state: restarted
+    enabled: yes
+    daemon_reload: yes
+  when: install_database_register.changed
+
+- name: mariadb-secure-installation
+  expect:
+    command: mariadb-secure-installation
+    responses:
+      'Enter current password for root': ''
+      'Switch to unix_socket authentication': 'y'
+      'Change the root password': 'n'
+      'Remove anonymous users': 'y'
+      'Disallow root login remotely': 'y'
+      'Remove test database': 'y'
+      'Reload privilege tables now': 'y'
+    timeout: 1
+  when: install_database_register.changed
+  register: secure_mariadb
+  failed_when: "'... Failed!' in secure_mariadb.stdout_lines"
+
+- name: Check if WordPress has already been downloaded
+  stat:
+    path: /root/wordpress.tar.gz
+  register: wordpress_exists
+
+- name: Download WordPress
+  get_url:
+    url: "https://wordpress.org/wordpress-{{ wordpress_version }}.tar.gz"
+    dest: /root/wordpress.tar.gz
+    mode: '440'
+  when: not wordpress_exists.stat.exists
+
+- name: Unarchive WordPress
+  unarchive:
+    src: /root/wordpress.tar.gz
+    dest: /root/
+    remote_src: yes
+  when: not wordpress_exists.stat.exists
+
+- name: Copy wordpress to /var/www/
+  copy:
+    src: /root/wordpress/
+    dest: /var/www/wordpress
+    owner: www-data
+    group: www-data
+    remote_src: yes
+  when: not wordpress_exists.stat.exists

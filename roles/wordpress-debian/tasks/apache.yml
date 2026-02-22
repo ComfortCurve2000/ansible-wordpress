@@ -1,0 +1,82 @@
+---
+- name: Check if SSL certificate was created
+  stat:
+    path: etc/ssl/private/{{ inventory_hostname }}.key
+  register: ssl_key
+
+- name: Generate self-signed SSL certificate for Apache
+  command: >2
+    openssl req
+    -x509
+    -nodes
+    -days 3650
+    -newkey rsa:2048
+    -keyout /etc/ssl/private/{{ inventory_hostname }}.key
+    -out /etc/ssl/certs/{{ inventory_hostname }}.crt
+    -subj "/C=US/ST=Colorado/L=Colorado Springs/O=MDN/CN={{ inventory_hostname }}"
+  when: not ssl_key.stat.exists and not custom_certificate
+
+- name: Copy Custom SSL Certificate
+  block:
+    - name: Copy Certificate
+      copy:
+        src: "{{ inventory_dir }}/secure/certificates/{{ inventory_hostname }}.crt"
+        dest: "/etc/ssl/certs/{{ inventory_hostname }}.crt"
+        force: yes
+        owner: root
+        group: root
+        mode: '644'
+    - name: Copy Private Key
+      copy:
+        src: "{{ inventory_dir }}/secure/certificates/{{ inventory_hostname }}.key"
+        dest: "/etc/ssl/private/{{ inventory_hostname }}.key"
+        force: yes
+        owner: root
+        group: root
+        mode: '600'
+  when: custom_certificate
+
+- name: Apache WordPress Configuration
+  template:
+    src: wordpress.conf.j2
+    dest: "/etc/apache2/sites-available/wordpress.conf"
+    owner: root
+    group: root
+    mode: '644'
+  register: apache_configuration
+
+- name: Enable wordpress.conf
+  command: a2ensite wordpress.conf
+
+- name: Add port 80/tcp
+  ansible.builtin.iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_port: "80"
+    jump: ACCEPT
+    action: insert
+  register: iptables_80_result
+
+- name: Add port 443/tcp
+  ansible.builtin.iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_port: "443"
+    jump: ACCEPT
+    action: insert
+  register: iptables_443_result
+
+- name: Save iptables
+  shell: "iptables-save > /etc/iptables/rules.v4"
+  when: iptables_80_result.changed or iptables_443_result.changed
+
+- name: Restart Apache
+  service:
+    name: "apache2"
+    state: restarted
+    enabled: yes
+  when: apache_configuration.changed
+
+- name: Redis Object Cache
+  pause:
+    prompt: "Make sure to install the `Redis Object Cache` plugin. Press enter to continue."

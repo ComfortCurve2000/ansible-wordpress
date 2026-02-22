@@ -1,0 +1,45 @@
+---
+- name: Set Hostname
+  include_tasks:
+    file: debian_hostname.yml
+    apply:
+      tags: [hostname]
+  tags: [hostname]
+
+- name: Configure Firewall
+  include_tasks:
+    file: debian_firewall.yml
+    apply:
+      tags: [firewall]
+  tags: [firewall]
+
+- name: Unattended Upgrades
+  include_tasks:
+    file: debian_unattended-upgrades.yml
+    apply:
+      tags: [unattended-upgrade]
+  tags: [unattended-upgrade]
+
+- name: Debian 13
+  block:
+    - name: Baseline Packages
+      include_tasks:
+        file: debian_13_baseline.yml
+        apply:
+          tags: [baseline]
+      tags: [baseline] 
+  when: ansible_facts.distribution_major_version == "13"
+
+- name: Add Users
+  include_tasks:
+    file: debian_users.yml
+    apply:
+      tags: [users]
+  tags: [never,users]
+
+- name: Template Preparation
+  include_tasks:
+    file: debian_template_prep.yml
+    apply:
+      tags: [template_prep]
+  tags: [never,template_prep]

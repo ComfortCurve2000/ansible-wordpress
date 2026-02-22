@@ -1,0 +1,28 @@
+<VirtualHost *:80>
+  ServerName {{ wordpress_fqdn }}
+  Redirect permanent / https://{{ wordpress_fqdn }}/
+</VirtualHost>
+
+<VirtualHost *:443>
+  ServerName {{ wordpress_fqdn }}
+  AddDefaultCharset UTF-8
+
+  DocumentRoot /var/www/wordpress
+  
+  # ${APACHE_LOG_DIR} = /var/log/apache2
+  ErrorLog ${APACHE_LOG_DIR}/wordpress_ssl_error.log
+  CustomLog ${APACHE_LOG_DIR}/wordpress_ssl_access.log combined
+  LogLevel warn
+
+  SSLEngine on
+  Protocols h2 http/1.1
+  
+  SSLCertificateFile /etc/ssl/certs/{{ inventory_hostname }}.crt
+  SSLCertificateKeyFile /etc/ssl/private/{{ inventory_hostname }}.key
+
+  <Directory /var/www/wordpress>
+    Options FollowSymLinks
+    AllowOverride All
+    Require all granted
+  </Directory>
+</VirtualHost>
