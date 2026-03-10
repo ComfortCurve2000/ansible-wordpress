@@ -45,6 +45,9 @@
     mode: '644'
   register: apache_configuration
 
+- name: Disable 000-default.conf
+  command: a2dissite 000-default.conf
+
 - name: Enable wordpress.conf
   command: a2ensite wordpress.conf
 
