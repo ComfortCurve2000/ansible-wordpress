@@ -39,6 +39,14 @@
     - "'network-manager' not in ansible_facts.packages"
     - "'systemd-resolved' not in ansible_facts.packages"
 
+- name: sshd_config
+  template:
+    src: "sshd_config.j2"
+    dest: "/etc/ssh/sshd_config"
+    owner: root
+    group: root
+    mode: '644'
+
 - stat:
     path: /var/run/reboot-required
   register: reboot_required
