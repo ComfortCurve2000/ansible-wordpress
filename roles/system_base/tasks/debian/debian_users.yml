@@ -1,21 +1,41 @@
 ---
-- name: Add User
+- name: Add Sudo Users
   user:
     name: "{{ item['key'] }}"
     state: present
     groups: sudo,cdrom,floppy,audio,dip,video,plugdev,users,netdev
     shell: /bin/bash
-  loop: "{{ users|dict2items }}"
+  loop: "{{ system_base_sudo_users | dict2items }}"
+  when: system_base_sudo_users is defined
 
-- name: Add SSH Key
+- name: Add Sudo Users SSH Key
   authorized_key:
     user: "{{ item['key'] }}"
     state: present
     key: "{{ item['value'] }}"
-  loop: "{{ users|dict2items }}"
+  loop: "{{ system_base_sudo_users | dict2items }}"
+  when: system_base_sudo_users is defined
+
+- name: Add Users
+  user:
+    name: "{{ item['key'] }}"
+    state: present
+    groups: users
+    shell: /bin/bash
+  loop: "{{ system_base_users | dict2items }}"
+  when: system_base_users is defined
+
+- name: Add Users SSH Key
+  authorized_key:
+    user: "{{ item['key'] }}"
+    state: present
+    key: "{{ item['value'] }}"
+  loop: "{{ system_base_users | dict2items }}"
+  when: system_base_users is defined
 
 - name: Remove User
   user:
     name: "{{ item }}"
     state: absent
   loop: "{{ remove_users }}"
+  when: system_base_remove_users is defined

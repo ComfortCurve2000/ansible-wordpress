@@ -1,5 +1,5 @@
-#users:
+#system_base_sudo_users:
 #  usertoadd: "ssh-ed25519 somekey"
 
-#remove_users:
+#system_base_remove_users:
 #  - someuser
