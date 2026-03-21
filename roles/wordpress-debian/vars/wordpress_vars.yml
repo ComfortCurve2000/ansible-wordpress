@@ -1,5 +1,5 @@
 wordpress_vars_exist: Defined
-wordpress_hosts: {{host}}
+wordpress_host: {{host}}
 wordpress_fqdn: {{wordpress_hostname}} #eg wordpress.yourdomain.net
 custom_certificate: False
 
