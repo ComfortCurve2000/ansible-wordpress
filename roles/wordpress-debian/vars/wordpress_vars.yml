@@ -1,6 +1,6 @@
 wordpress_vars_exist: Defined
-wordpress_host: {{host}}
-wordpress_fqdn: {{wordpress_hostname}} #eg wordpress.yourdomain.net
+wordpress_host: {{host}} #matches your inventory
+wordpress_fqdn: {{wordpress_hostname}} #eg "wordpress.yourdomain.net" or "192.168.0.10" if no dns
 custom_certificate: False
 
 #Developed for 6.9.1 on Debian 13
