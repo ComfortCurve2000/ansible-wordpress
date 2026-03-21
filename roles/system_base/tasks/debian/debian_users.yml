@@ -20,7 +20,7 @@
   user:
     name: "{{ item['key'] }}"
     state: present
-    groups: users
+    groups: users,audio,video
     shell: /bin/bash
   loop: "{{ system_base_users | dict2items }}"
   when: system_base_users is defined
