@@ -51,42 +51,34 @@
 - name: Enable wordpress.conf
   command: a2ensite wordpress.conf
 
+- name: Add port 80/tcp
+  ansible.builtin.iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_port: "80"
+    jump: ACCEPT
+    action: insert
+  register: iptables_80_result
+
+- name: Add port 443/tcp
+  ansible.builtin.iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_port: "443"
+    jump: ACCEPT
+    action: insert
+  register: iptables_443_result
+
+- name: Save iptables
+  shell: "iptables-save > /etc/iptables/rules.v4"
+  when: iptables_80_result.changed or iptables_443_result.changed
+
 - name: Restart Apache
   service:
     name: "apache2"
     state: restarted
     enabled: yes
   when: apache_configuration.changed
-
-- name: nftwables wordpress ports
-  template:
-    src: wordpress.nft.j2
-    dest: /etc/nftables.d/input/wordpress.nft
-    owner: root
-    group: root
-    mode: '644'
-  register: nftables_configuration
-
-- name: Validate nftables
-  command: "nft -c -f /etc/nftables.conf"
-  register: nft_validation
-  failed_when: false
-  when: nftables_configuration.changed
-
-- name: Remove wordpress.nft if validation failed
-  file:
-    path: /etc/nftables.d/input/wordpress.nft
-    state: absent
-  when: nftables_configuration.changed and nft_validation.rc != 0
-
-- name: Apply nftables Configuration
-  command: "nft -f /etc/nftables.conf"
-  when: nftables_configuration.changed and nft_validation.rc == 0
-
-- name: Fail if nftables validation failed
-  fail:
-    msg: "Error: {{ nft_validation.stderr | default('nftables error') }}"
-  when: nftables_configuration.changed and nft_validation.rc != 0
 
 - name: Redis Object Cache
   pause:
