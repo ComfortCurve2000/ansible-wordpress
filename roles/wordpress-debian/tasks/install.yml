@@ -72,9 +72,9 @@
   register: secure_mariadb
   failed_when: "'... Failed!' in secure_mariadb.stdout_lines"
 
-- name: Check if WordPress has already been downloaded
+- name: Check if WordPress has already been installed
   stat:
-    path: /root/wordpress.tar.gz
+    path: /var/www/wordpress/wp-config.php
   register: wordpress_exists
 
 - name: Download WordPress
@@ -87,14 +87,7 @@
 - name: Unarchive WordPress
   unarchive:
     src: /root/wordpress.tar.gz
-    dest: /root/
-    remote_src: yes
-  when: not wordpress_exists.stat.exists
-
-- name: Copy wordpress to /var/www/
-  copy:
-    src: /root/wordpress/
-    dest: /var/www/wordpress
+    dest: /var/www/
     owner: www-data
     group: www-data
     remote_src: yes
