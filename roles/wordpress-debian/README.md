@@ -3,6 +3,8 @@ WordPress
 
 This role installs WordPress on Debian 13.
 
+The Backup/Restore functions have only had basic testing; make sure to thoroughly test with your site before relying on them.
+
 Requirements
 ------------
 

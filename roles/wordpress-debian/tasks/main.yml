@@ -19,3 +19,17 @@
     apply:
       tags: [apache]
   tags: [apache]
+
+- name: Backup
+  include_tasks:
+    file: backup.yml
+    apply:
+      tags: [backup]
+  tags: [never,backup]
+
+- name: Restore
+  include_tasks:
+    file: restore.yml
+    apply:
+      tags: [restore]
+  tags: [never,restore]

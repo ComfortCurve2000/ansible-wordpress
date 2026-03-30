@@ -1,0 +1,102 @@
+---
+- name: Get Backup Files
+  find:
+    paths: /root/wordpress_backup/
+    file_type: file
+    depth: 1
+    patterns: "wp-*.gz"
+  register: backup_files
+
+- name: Extract File Paths
+  set_fact:
+    backup_list: >-
+      {{
+        backup_files.files
+        | sort(attribute='path')
+        | map(attribute='path')
+        | list
+      }}
+
+- name: Restore Choices
+  debug:
+    msg: "[{{ index_number }}] {{ item }}"
+  loop: "{{ backup_list }}"
+  loop_control:
+    index_var: index_number
+
+- name: Restore Selection
+  pause:
+    prompt: "Enter the number of the backup file to use:"
+  register: restore_selection
+
+- name: Validate Selection
+  fail:
+    msg: "Invalid selection"
+  when: (restore_selection.user_input | int) not in range(0, backup_list | length)
+
+- name: Set restore_file_path
+  set_fact:
+    restore_file_path: "{{ backup_list[restore_selection.user_input | int] }}"
+
+- name: Extract Backup
+  unarchive:
+    src: "{{ restore_file_path }}"
+    dest: /root/wordpress_backup/
+    remote_src: true
+
+- name: Get restore_directory
+  set_fact:
+    restore_directory: "/root/wordpress_backup/{{ (restore_file_path | regex_search('wp-(\\d+)\\.gz', '\\1'))[0] }}"
+
+- name: Stop Apache
+  service:
+    name: "apache2"
+    state: stopped
+
+- name: Restore database
+  mysql_db:
+    name: "{{ wordpress_database_name }}"
+    state: import
+    target: "{{ restore_directory }}/{{ wordpress_database_name }}.sql"
+    login_unix_socket: /run/mysqld/mysqld.sock
+
+- name: Restore wp-content folder
+  synchronize:
+    src: "{{ restore_directory }}/wp-content"
+    dest: /var/www/wordpress/
+    delete: true
+  delegate_to: "{{ inventory_hostname }}"
+
+- name: Restore wp-config.php
+  synchronize:
+    src: "{{ restore_directory }}/wp-config.php"
+    dest: /var/www/wordpress/wp-config.php
+  delegate_to: "{{ inventory_hostname }}"
+
+- name: Restore .htaccess
+  synchronize:
+    src: "{{ restore_directory }}/.htaccess"
+    dest: /var/www/wordpress/.htaccess
+  delegate_to: "{{ inventory_hostname }}"
+
+- name: Flush redis cache
+  command: "redis-cli FLUSHALL"
+
+- name: Remove redis object-cache drop-in
+  file:
+    path: /var/www/wordpress/wp-content/object-cache.php
+    state: absent
+
+- name: Start Apache
+  service:
+    name: "apache2"
+    state: started
+
+- name: Remove temporary restore directory
+  file:
+    path: "{{ restore_directory }}"
+    state: absent
+
+- name: Redis Object Cache
+  pause:
+    prompt: "Make sure to re-enable Object Cache in the Redis Object Cache plugin settings. Press enter to continue."

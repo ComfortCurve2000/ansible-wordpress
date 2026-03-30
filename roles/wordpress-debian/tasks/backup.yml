@@ -1,0 +1,59 @@
+---
+- name: Get backup_timestamp
+  set_fact:
+    backup_timestamp: "{{ ansible_date_time.epoch }}"
+
+- name: Create temporary backup directory
+  file:
+    path: "/root/wordpress_backup/{{ backup_timestamp }}"
+    owner: root
+    group: root
+    mode: '750'
+    state: directory
+
+- name: Stop Apache
+  service:
+    name: "apache2"
+    state: stopped
+
+- name: Dump database
+  mysql_db:
+    state: dump
+    name: "{{ wordpress_database_name }}"
+    target: "/root/wordpress_backup/{{ backup_timestamp }}/{{ wordpress_database_name }}.sql"
+    single_transaction: true
+    login_unix_socket: /run/mysqld/mysqld.sock
+
+- name: Backup wp-content folder
+  synchronize:
+    src: /var/www/wordpress/wp-content
+    dest: "/root/wordpress_backup/{{ backup_timestamp }}/"
+  delegate_to: "{{ inventory_hostname }}"
+
+- name: Backup wp-config.php
+  synchronize:
+    src: /var/www/wordpress/wp-config.php
+    dest: "/root/wordpress_backup/{{ backup_timestamp }}/wp-config.php"
+  delegate_to: "{{ inventory_hostname }}"
+
+- name: Backup .htaccess
+  synchronize:
+    src: /var/www/wordpress/.htaccess
+    dest: "/root/wordpress_backup/{{ backup_timestamp }}/.htaccess"
+  delegate_to: "{{ inventory_hostname }}"
+
+- name: Start Apache
+  service:
+    name: "apache2"
+    state: started
+
+- name: "Creating /root/wordpress_backup/{{ backup_timestamp }}.gz"
+  archive:
+    path: /root/wordpress_backup/{{ backup_timestamp }}
+    dest: /root/wordpress_backup/wp-{{ backup_timestamp }}.gz
+    format: gz
+
+- name: Remove temporary backup directory
+  file:
+    path: "/root/wordpress_backup/{{ backup_timestamp }}"
+    state: absent

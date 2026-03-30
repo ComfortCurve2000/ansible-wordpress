@@ -1,5 +1,8 @@
 ---
 # ansible-playbook roles/wordpress-debian/build-wordpress.yml -e @secure/variables/wordpress_vars.yml
+# ansible-playbook roles/wordpress-debian/build-wordpress.yml -e @secure/variables/wordpress_vars.yml -t wordpress,backup
+# ansible-playbook roles/wordpress-debian/build-wordpress.yml -e @secure/variables/wordpress_vars.yml -t wordpress,restore
+
 - name: WordPress
   hosts: "{{ wordpress_host }}"
   become: yes

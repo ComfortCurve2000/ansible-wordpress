@@ -6,3 +6,5 @@ See README.md under each role. Playbooks live under their respective roles. Crea
 After configuring hosts and your wordpress_vars, here is the main playbook:
 
 `ansible-playbook roles/wordpress-debian/build-wordpress.yml -e @secure/variables/wordpress_vars.yml`
+
+The Backup/Restore functions have only had basic testing; make sure to thoroughly test with your site before relying on them.
