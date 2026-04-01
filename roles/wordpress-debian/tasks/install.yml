@@ -92,3 +92,27 @@
     group: www-data
     remote_src: yes
   when: not wordpress_exists.stat.exists
+
+- name: Create /opt/wordpress/
+  file:
+    path: "/opt/wordpress"
+    owner: root
+    group: www-data
+    mode: '750'
+    state: directory
+
+- name: Download wp-cli.phar
+  get_url:
+    url: https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+    dest: /opt/wordpress
+    owner: root
+    group: www-data
+    mode: '750'
+
+- name: /root/wp-cli.txt
+  copy:
+    dest: /root/wp-cli.txt
+    content: "To use the `wp` command run:\nsudo -u www-data -- /opt/wordpress/wp-cli.phar\n"
+    owner: root
+    group: root
+    mode: "640"
